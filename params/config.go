@@ -18,7 +18,9 @@ package params
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -344,7 +346,24 @@ type ChainConfig struct {
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
 // todo:
 type HotStuffConfig struct {
-	Protocol string `json:"protocol"`
+	Protocol       string   `json:"protocol"`
+	ForkHeight     uint64   `json:"forkHeight"`
+	ForkValidators []string `json:"forkValidators"`
+	ForkEpochId    uint64   `json:"forkEpochId"`
+	Incentive      uint64   `json:"incentive"`
+}
+
+func (h *HotStuffConfig) Decode(data []byte) error {
+	err := json.Unmarshal(data, h)
+	return err
+}
+
+func (h *HotStuffConfig) LoadForkConfig(hscPath string) error {
+	data, err := ioutil.ReadFile(hscPath)
+	if err != nil {
+		return err
+	}
+	return h.Decode(data)
 }
 
 // String implements the stringer interface, returning the consensus engine details.

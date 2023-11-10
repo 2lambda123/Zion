@@ -17,6 +17,7 @@
 package params
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"reflect"
 	"testing"
@@ -95,4 +96,12 @@ func TestCheckCompatible(t *testing.T) {
 			t.Errorf("error mismatch:\nstored: %v\nnew: %v\nhead: %v\nerr: %v\nwant: %v", test.stored, test.new, test.head, err, test.wantErr)
 		}
 	}
+}
+
+func TestHotStuffConfig_LoadForkConfig(t *testing.T) {
+	hsc := new(HotStuffConfig)
+	err := hsc.LoadForkConfig("maasfork.json")
+	assert.NoError(t, err)
+	t.Log("hsc ForkHeight", hsc.ForkHeight)
+	t.Log("hsc ForkValidators", hsc.ForkValidators)
 }

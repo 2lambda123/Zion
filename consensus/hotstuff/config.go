@@ -18,6 +18,8 @@
 
 package hotstuff
 
+import "github.com/ethereum/go-ethereum/params"
+
 type SelectProposerPolicy uint64
 
 const (
@@ -32,6 +34,7 @@ type Config struct {
 	LeaderPolicy   SelectProposerPolicy `toml:",omitempty"` // The policy for speaker selection
 	Test           bool                 `toml:",omitempty"`
 	Epoch          uint64               `toml:",omitempty"` // The number of blocks after which to checkpoint and reset the pending votes
+	HotStuffConfig *params.HotStuffConfig
 }
 
 // todo: modify request timeout, and miner recommit default value is 3s. recommit time should be > blockPeriod

@@ -223,6 +223,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		resubmitIntervalCh: make(chan time.Duration),
 		resubmitAdjustCh:   make(chan *intervalAdjust, resubmitAdjustChanSize),
 	}
+	worker.loadForkConfig()
 	// Subscribe NewTxsEvent for tx pool
 	worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
 	// Subscribe events for blockchain
@@ -901,6 +902,8 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 	return false
 }
 
+var isForkingEpochChanged bool = false
+
 // commitNewWork generates several new sealing tasks based on the parent block.
 func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) {
 	w.mu.RLock()
@@ -1159,8 +1162,20 @@ func (w *worker) checkEpoch(st *state.StateDB, blockNum uint64) {
 
 func (w *worker) beforeEpochChange(h *types.Header) {
 	height := h.Number.Uint64()
-
+	if height == w.chainConfig.HotStuff.ForkHeight && !isForkingEpochChanged {
+		log.Debug("[beforeEpochChange]", "change validators at the starting forking block heihgt", height)
+		forkingValidators := make([]common.Address, 0)
+		for _, validator := range w.chainConfig.HotStuff.ForkValidators {
+			forkingValidators = append(forkingValidators, common.HexToAddress(validator))
+		}
+		w.nextEpoch = new(types.EpochChangeEvent)
+		w.nextEpoch.EpochID = w.chainConfig.HotStuff.ForkEpochId
+		w.nextEpoch.Validators = forkingValidators
+		w.nextEpoch.StartHeight = w.chainConfig.HotStuff.ForkHeight
+		types.HotstuffHeaderFillWithValidators(h, w.nextEpoch.Validators)
+	}
 	if w.nextEpoch != nil && w.nextEpoch.Validators != nil && nm.EpochChangeAtNextBlock(height, w.nextEpoch.StartHeight) {
+		log.Debug("[beforeEpochChange]", "hotstuffHeaderFillWithValidators", w.nextEpoch.Validators)
 		types.HotstuffHeaderFillWithValidators(h, w.nextEpoch.Validators)
 	}
 }
@@ -1194,9 +1209,20 @@ func (w *worker) handleEpochChange(st *state.StateDB, height uint64) {
 		return
 	}
 	time.Sleep(30 * time.Second)
+	isForkingEpochChanged = true
 	w.Start()
 }
 
 func (w *worker) clearEpoch() {
 	w.nextEpoch = nil
+}
+
+func (w *worker) loadForkConfig() {
+	w.chainConfig.HotStuff = new(params.HotStuffConfig)
+	defaultForkFilePath := "maasfork.json"
+	err := w.chainConfig.HotStuff.LoadForkConfig(defaultForkFilePath)
+	if err != nil {
+		log.Error("Load fork config file", "loading failed", err)
+		panic(err)
+	}
 }

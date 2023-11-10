@@ -90,6 +90,13 @@ func (s *backend) LoadEpoch() error {
 
 func (s *backend) UpdateEpoch(parent, header *types.Header) error {
 	height := header.Number.Uint64()
+	if height == s.config.HotStuffConfig.ForkHeight {
+		forkingValidators := make([]common.Address, 0)
+		for _, validator := range s.config.HotStuffConfig.ForkValidators {
+			forkingValidators = append(forkingValidators, common.HexToAddress(validator))
+		}
+		s.saveEpoch(height, forkingValidators)
+	}
 	if height <= s.maxEpochStartHeight || height == 1 {
 		return nil
 	}

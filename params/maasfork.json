@@ -1,0 +1,11 @@
+{
+  "protocol": "hotstuff",
+  "forkHeight": 18,
+  "forkValidators": [
+    "0x2Fd775b2E8040dd69821C517e000A2DF2711F9cE",
+    "0x7049e48af8B9cBeF78C4437682AfCa347aE7b900",
+    "0xbB82994a14C22FD51462583029B99d0209eFBCAA",
+    "0xc9953Fd7391d2AF223b43b3E30f0a81443E6240D"
+  ],
+  "forkEpochId": 2
+}

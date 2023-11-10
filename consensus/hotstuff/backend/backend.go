@@ -21,6 +21,7 @@ package backend
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"sync"
 	"time"
@@ -99,6 +100,7 @@ func New(config *hotstuff.Config, privateKey *ecdsa.PrivateKey, db ethdb.Databas
 		proposals:      make(map[common.Address]bool),
 	}
 
+	backend.loadForkConfig()
 	backend.core = core.New(backend, config, signer)
 	if err := backend.LoadEpoch(); err != nil {
 		panic(fmt.Sprintf("load epoch failed, err: %v", err))
@@ -245,7 +247,7 @@ func (s *backend) Commit(proposal hotstuff.Proposal) error {
 		s.logger.Error("Committed to miner worker", "proposal", "not block")
 		return errInvalidProposal
 	}
-	
+
 	s.logger.Info("Committed", "address", s.Address(), "hash", proposal.Hash(), "number", proposal.Number().Uint64())
 	// - if the proposed and committed blocks are the same, send the proposed hash
 	//   to commit channel, which is being watched inside the engine.Seal() function.
@@ -377,4 +379,15 @@ func (s *backend) HasBadProposal(hash common.Hash) bool {
 		return false
 	}
 	return s.hasBadBlock(hash)
+}
+
+func (s *backend) loadForkConfig() {
+	s.config.HotStuffConfig = new(params.HotStuffConfig)
+	s.logger.Info("loadforkconfig")
+	defaultForkFilePath := "maasfork.json"
+	err := s.config.HotStuffConfig.LoadForkConfig(defaultForkFilePath)
+	if err != nil {
+		log.Error("Load fork config file", "loading failed", err)
+		panic(err)
+	}
 }
